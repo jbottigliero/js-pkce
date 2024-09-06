@@ -80,10 +80,10 @@ describe('Test PKCE exchange code for token', () => {
     expect(fetch.mock.calls[0][0]).toEqual(config.token_endpoint);
   });
 
-  it('Should set code verifier', async () => {
+  it('Should reset code verifier', async () => {
     await mockRequest();
 
-    expect(sessionStorage.getItem('pkce_code_verifier')).not.toEqual(null);
+    expect(sessionStorage.getItem('pkce_code_verifier')).toEqual(null);
   });
 
   it('Should request with headers', async () => {
@@ -145,8 +145,6 @@ describe('Test PKCE exchange code for token', () => {
 
     fetch.resetMocks();
     fetch.mockResponseOnce(JSON.stringify(mockSuccessResponse));
-
-    sessionStorage.removeItem('pkce_code_verifier');
 
     await instance.exchangeForAccessToken(url, additionalParams);
   }

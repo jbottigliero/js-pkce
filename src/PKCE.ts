@@ -32,6 +32,9 @@ export class PKCE {
   private codeVerifier: string = '';
   private corsRequestOptions: ICorsOptions = {};
 
+  STATE_KEY = 'pkce_state';
+  CODE_VERIFIER_KEY = 'pkce_code_verifier';
+
   /**
    * Initialize the instance with configuration
    * @param {IConfig} config
@@ -80,35 +83,44 @@ export class PKCE {
     return `${this.config.authorization_endpoint}?${queryString}`;
   }
 
+  public resetStorageState() {
+    this.getStore().removeItem(this.STATE_KEY);
+    this.getStore().removeItem(this.CODE_VERIFIER_KEY);
+  }
+
   /**
    * Given the return url, get a token from the oauth server
    * @param  url current urlwith params from server
    * @param  {object} additionalParams include additional parameters in the request body
    * @return {Promise<ITokenResponse>}
    */
-  public exchangeForAccessToken(url: string, additionalParams: IObject = {}): Promise<ITokenResponse> {
-    return this.parseAuthResponseUrl(url).then((q) => {
-      return fetch(this.config.token_endpoint, {
-        method: 'POST',
-        body: new URLSearchParams(
-          Object.assign(
-            {
-              grant_type: 'authorization_code',
-              code: q.code,
-              client_id: this.config.client_id,
-              redirect_uri: this.config.redirect_uri,
-              code_verifier: this.getCodeVerifier(),
-            },
-            additionalParams,
-          ),
+  public async exchangeForAccessToken(url: string, additionalParams: IObject = {}): Promise<ITokenResponse> {
+    const query = await this.parseAuthResponseUrl(url);
+
+    const exchange = await fetch(this.config.token_endpoint, {
+      method: 'POST',
+      body: new URLSearchParams(
+        Object.assign(
+          {
+            grant_type: 'authorization_code',
+            code: query.code,
+            client_id: this.config.client_id,
+            redirect_uri: this.config.redirect_uri,
+            code_verifier: this.getCodeVerifier(),
+          },
+          additionalParams,
         ),
-        headers: {
-          Accept: 'application/json',
-          'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
-        },
-        ...this.corsRequestOptions,
-      }).then((response) => response.json());
+      ),
+      headers: {
+        Accept: 'application/json',
+        'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
+      },
+      ...this.corsRequestOptions,
     });
+
+    this.resetStorageState();
+
+    return exchange.json();
   }
 
   /**
@@ -116,8 +128,8 @@ export class PKCE {
    * @param  refreshTokens current refresh token from server
    * @return {Promise<ITokenResponse>}
    */
-  public refreshAccessToken(refreshToken: string): Promise<ITokenResponse> {
-    return fetch(this.config.token_endpoint, {
+  public async refreshAccessToken(refreshToken: string): Promise<ITokenResponse> {
+    const response = await fetch(this.config.token_endpoint, {
       method: 'POST',
       body: new URLSearchParams({
         grant_type: 'refresh_token',
@@ -128,7 +140,8 @@ export class PKCE {
         Accept: 'application/json',
         'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
       },
-    }).then((response) => response.json());
+    });
+    return response.json();
   }
 
   /**
@@ -137,7 +150,7 @@ export class PKCE {
    */
   private getCodeVerifier(): string {
     if (this.codeVerifier === '') {
-      this.codeVerifier = this.randomStringFromStorage('pkce_code_verifier');
+      this.codeVerifier = this.randomStringFromStorage(this.CODE_VERIFIER_KEY);
     }
 
     return this.codeVerifier;
@@ -148,14 +161,12 @@ export class PKCE {
    * @return {string}
    */
   private getState(explicit: string = null): string {
-    const stateKey = 'pkce_state';
-
     if (explicit !== null) {
-      this.getStore().setItem(stateKey, explicit);
+      this.getStore().setItem(this.STATE_KEY, explicit);
     }
 
     if (this.state === '') {
-      this.state = this.randomStringFromStorage(stateKey);
+      this.state = this.randomStringFromStorage(this.STATE_KEY);
     }
 
     return this.state;
