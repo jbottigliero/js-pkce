@@ -11,7 +11,7 @@ A package that makes using the OAuth2 PKCE flow easier
 Create a new instance of js-pkce with all of the details needed.
 
 ```javascript
-import PKCE from 'js-pkce';
+import { PKCE } from 'js-pkce';
 const pkce = new PKCE({
   client_id: 'myclientid',
   redirect_uri: 'http://localhost:8080/auth',
