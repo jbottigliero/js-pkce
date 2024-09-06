@@ -10,9 +10,9 @@ const config = {
 };
 
 describe('Test PKCE authorization url', () => {
-  it('Should build an authorization url', () => {
+  it('Should build an authorization url', async () => {
     const instance = new PKCE(config);
-    const url = instance.authorizeUrl();
+    const url = await instance.authorizeUrl();
 
     expect(url).toContain(config.authorization_endpoint);
     expect(url).toContain('?response_type=code');
@@ -25,9 +25,9 @@ describe('Test PKCE authorization url', () => {
     expect(url).toContain('&code_challenge_method=S256');
   });
 
-  it('Should include additional parameters', () => {
+  it('Should include additional parameters', async () => {
     const instance = new PKCE(config);
-    const url = instance.authorizeUrl({test_param: 'test'});
+    const url = await instance.authorizeUrl({ test_param: 'test' });
 
     expect(url).toContain(config.authorization_endpoint);
     expect(url).toContain('?response_type=code');
@@ -37,7 +37,7 @@ describe('Test PKCE authorization url', () => {
 
   it('Should update state from additional params', async () => {
     const instance = new PKCE(config);
-    const url = instance.authorizeUrl({state: 'Anewteststate'});
+    const url = await instance.authorizeUrl({ state: 'Anewteststate' });
 
     expect(url).toContain('&state=Anewteststate');
     expect(sessionStorage.getItem('pkce_state')).toEqual('Anewteststate');
@@ -106,7 +106,7 @@ describe('Test PKCE exchange code for token', () => {
   });
 
   it('Should request with additional parameters', async () => {
-    await mockRequest({test_param: 'testing'});
+    await mockRequest({ test_param: 'testing' });
     const body = new URLSearchParams(fetch.mock.calls[0][1].body.toString());
 
     expect(body.get('grant_type')).toEqual('authorization_code');
@@ -115,24 +115,24 @@ describe('Test PKCE exchange code for token', () => {
 
   it('Should have set the cors credentials options correctly', async () => {
     // enable cors credentials
-    await mockRequest({}, true)
-    expect(fetch.mock.calls[0][1]?.mode).toEqual('cors')
-    expect(fetch.mock.calls[0][1]?.credentials).toEqual('include')
-  })
+    await mockRequest({}, true);
+    expect(fetch.mock.calls[0][1]?.mode).toEqual('cors');
+    expect(fetch.mock.calls[0][1]?.credentials).toEqual('include');
+  });
 
   it('Should _not_ have cors credentials options set', async () => {
     // enable cors credentials
-    await mockRequest({}, false)
-    expect(fetch.mock.calls[0][1]?.mode).toBeUndefined()
-    expect(fetch.mock.calls[0][1]?.credentials).toBeUndefined()
-  })
+    await mockRequest({}, false);
+    expect(fetch.mock.calls[0][1]?.mode).toBeUndefined();
+    expect(fetch.mock.calls[0][1]?.credentials).toBeUndefined();
+  });
 
   async function mockRequest(additionalParams: object = {}, enableCorsCredentials = false) {
     sessionStorage.setItem('pkce_state', 'teststate');
     const url = 'https://example.com?state=teststate&code=123';
     const instance = new PKCE(config);
 
-    instance.enableCorsCredentials(enableCorsCredentials)
+    instance.enableCorsCredentials(enableCorsCredentials);
 
     const mockSuccessResponse = {
       access_token: 'token',
@@ -144,7 +144,7 @@ describe('Test PKCE exchange code for token', () => {
     };
 
     fetch.resetMocks();
-    fetch.mockResponseOnce(JSON.stringify(mockSuccessResponse))
+    fetch.mockResponseOnce(JSON.stringify(mockSuccessResponse));
 
     sessionStorage.removeItem('pkce_code_verifier');
 
@@ -179,7 +179,6 @@ describe('Test PCKE refresh token', () => {
     expect(body.get('refresh_token')).toEqual(refreshToken);
   });
 
-
   async function mockRequest() {
     const instance = new PKCE(config);
 
@@ -193,12 +192,11 @@ describe('Test PCKE refresh token', () => {
     };
 
     fetch.resetMocks();
-    fetch.mockResponseOnce(JSON.stringify(mockSuccessResponse))
+    fetch.mockResponseOnce(JSON.stringify(mockSuccessResponse));
 
     await instance.refreshAccessToken(refreshToken);
   }
 });
-
 
 describe('Test storage types', () => {
   it('Should default to sessionStorage, localStorage emtpy', async () => {

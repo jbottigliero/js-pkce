@@ -1,11 +1,30 @@
-import sha256 from 'crypto-js/sha256';
-import Base64 from 'crypto-js/enc-base64';
-import WordArray from 'crypto-js/lib-typedarrays';
 import IAuthResponse from './IAuthResponse';
 import IConfig from './IConfig';
 import IObject from './IObject';
 import ITokenResponse from './ITokenResponse';
 import ICorsOptions from './ICorsOptions';
+
+function getCrypto() {
+  return globalThis.crypto;
+}
+
+async function sha256(input: string) {
+  const hashBuffer = await getCrypto().subtle.digest('SHA-256', new TextEncoder().encode(input));
+  return Array.from(new Uint8Array(hashBuffer))
+    .map((item) => item.toString(16).padStart(2, '0'))
+    .join('');
+}
+
+export const createRandomString = () => {
+  const charset = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz-_~.';
+  let random = '';
+  const randomValues = Array.from(getCrypto().getRandomValues(new Uint8Array(43)));
+  randomValues.forEach((v) => (random += charset[v % charset.length]));
+  return random;
+};
+
+export const encode = (value: string) => btoa(value);
+export const decode = (value: string) => atob(value);
 
 export default class PKCE {
   private config: IConfig;
@@ -39,10 +58,9 @@ export default class PKCE {
   /**
    * Generate the authorize url
    * @param  {object} additionalParams include additional parameters in the query
-   * @return Promise<string>
    */
-  public authorizeUrl(additionalParams: IObject = {}): string {
-    const codeChallenge = this.pkceChallengeFromVerifier();
+  public async authorizeUrl(additionalParams: IObject = {}) {
+    const codeChallenge = await this.pkceChallengeFromVerifier();
 
     const queryString = new URLSearchParams(
       Object.assign(
@@ -161,11 +179,10 @@ export default class PKCE {
 
   /**
    * Generate a code challenge
-   * @return {Promise<string>}
    */
-  private pkceChallengeFromVerifier(): string {
-    const hashed = sha256(this.getCodeVerifier());
-    return Base64.stringify(hashed).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  private async pkceChallengeFromVerifier() {
+    const hashed = await sha256(this.getCodeVerifier());
+    return encode(hashed).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
   }
 
   /**
@@ -176,7 +193,7 @@ export default class PKCE {
   private randomStringFromStorage(key: string): string {
     const fromStorage = this.getStore().getItem(key);
     if (fromStorage === null) {
-      this.getStore().setItem(key, WordArray.random(64));
+      this.getStore().setItem(key, createRandomString());
     }
 
     return this.getStore().getItem(key) || '';
