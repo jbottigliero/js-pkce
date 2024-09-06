@@ -1,4 +1,4 @@
-export default interface IAuthResponse {
+export interface IAuthResponse {
   error: string | null;
   query: string | null;
   state: string | null;

@@ -1,8 +1,8 @@
-import IAuthResponse from './IAuthResponse';
-import IConfig from './IConfig';
-import IObject from './IObject';
-import ITokenResponse from './ITokenResponse';
-import ICorsOptions from './ICorsOptions';
+import type { IAuthResponse } from './IAuthResponse';
+import type { IConfig } from './IConfig';
+import type { IObject } from './IObject';
+import type { ITokenResponse } from './ITokenResponse';
+import type { ICorsOptions } from './ICorsOptions';
 
 function getCrypto() {
   return globalThis.crypto;
@@ -26,7 +26,7 @@ export const createRandomString = () => {
 export const encode = (value: string) => btoa(value);
 export const decode = (value: string) => atob(value);
 
-export default class PKCE {
+export class PKCE {
   private config: IConfig;
   private state: string = '';
   private codeVerifier: string = '';

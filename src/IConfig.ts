@@ -1,4 +1,4 @@
-export default interface IConfig {
+export interface IConfig {
   client_id: string;
   redirect_uri: string;
   authorization_endpoint: string;

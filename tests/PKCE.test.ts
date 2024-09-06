@@ -1,4 +1,4 @@
-import PKCE from '../src/PKCE';
+import { PKCE } from '../src/PKCE';
 import fetch from 'jest-fetch-mock';
 
 const config = {
